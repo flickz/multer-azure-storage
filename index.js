@@ -31,7 +31,7 @@ class MulterAzureStorage {
         this.containerCreated = false
         this.containerError = false
         
-        if(typeof opts === 'string' && opts === 'test'){
+        if(typeof opts === 'string'){
             this.containerName = opts.containerName
             this.blobService = azure.createBlobService(azure.generateDevelopmentStorageCredentials())
         }else{
