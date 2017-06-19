@@ -11,6 +11,18 @@ const blobName = (file) => {
     return name
 }
 
+const validateOptions = (opts)=>{
+    let missingParameters = [];
+    if (!opts.azureStorageConnectionString) missingParameters.push("azureStorageConnectionString")
+    if (!opts.azureStorageAccessKey) missingParameters.push("azureStorageAccessKey")
+    if (!opts.azureStorageAccount) missingParameters.push("azureStorageAccount")
+    if (!opts.containerName) missingParameters.push("containerName")
+
+    if (missingParameters.length > 0) {
+        throw new Error('Missing required parameter' + (missingParameters.length > 1 ? 's' : '') + ' from the options of MulterAzureStorage: ' + missingParameters.join(', '))
+    }
+}
+
 const defaultSecurity = 'blob'
 
 class MulterAzureStorage {
@@ -18,23 +30,18 @@ class MulterAzureStorage {
     constructor (opts) {
         this.containerCreated = false
         this.containerError = false
-
-        let missingParameters = []
-        if (!opts.azureStorageConnectionString) missingParameters.push("azureStorageConnectionString")
-        if (!opts.azureStorageAccessKey) missingParameters.push("azureStorageAccessKey")
-        if (!opts.azureStorageAccount) missingParameters.push("azureStorageAccount")
-        if (!opts.containerName) missingParameters.push("containerName")
-
-        if (missingParameters.length > 0) {
-          throw new Error('Missing required parameter' + (missingParameters.length > 1 ? 's' : '') + ' from the options of MulterAzureStorage: ' + missingParameters.join(', '))
+        
+        if(typeof opts === 'string' && opts === 'test'){
+            this.containerName = opts.containerName
+            this.blobService = azure.createBlobService(azure.generateDevelopmentStorageCredentials())
+        }else{
+            validateOptions(opts);
+            this.containerName = opts.containerName
+            this.blobService = azure.createBlobService(
+                opts.azureStorageAccount,
+                opts.azureStorageAccessKey,
+                opts.azureStorageConnectionString)
         }
-
-        this.containerName = opts.containerName
-
-        this.blobService = azure.createBlobService(
-            opts.azureStorageAccount,
-            opts.azureStorageAccessKey,
-            opts.azureStorageConnectionString)
 
         let security = opts.containerSecurity || defaultSecurity
 
@@ -50,7 +57,6 @@ class MulterAzureStorage {
             _requestsQueue = []
         })
     }
-
     _handleFile(req, file, cb) {
         if (this.containerError) {
             cb(new Error('Cannot use container. Check if provided options are correct.'))
@@ -100,7 +106,7 @@ class MulterAzureStorage {
 }
 
 /**
- * @param {object}      [opts]
+ * @param {object | string}      [opts]
  * @param {string}      [opts.azureStorageConnectionString]
  * @param {string}      [opts.azureStorageAccessKey]
  * @param {string}      [opts.azureStorageAccount]
